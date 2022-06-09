@@ -3,8 +3,10 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 import javax.swing.*;
+import javax.xml.bind.Element;
 import java.awt.*;
 import java.io.File;
+import java.util.List;
 
 public class MainPanel extends JPanel {
 
@@ -18,11 +20,12 @@ public class MainPanel extends JPanel {
     private final int DISTANCE =200;
     private final int FONT_SIZE= 18;
 
+
     private ImageIcon backGround;
     private boolean loopConnectStatus=true;
-    private JLabel messageStatus;
+    private JTextField  messageStatus;
     private Font font=new Font("",Font.BOLD,FONT_SIZE);
-
+    private WebElement lastMessageStatus;
 
     public MainPanel(){
 
@@ -87,12 +90,19 @@ public class MainPanel extends JPanel {
             this.add(messageText);
 
             //  תיבת סטטוס קבלת הודעה
-            messageStatus =new JLabel("");
-            messageStatus.setBounds(X_Y_START,connectMessage.getY()+DISTANCE*2,FIELD_WITH/2,FIELD_WITH);
+           messageStatus =new JTextField("");
+            messageStatus.setBounds(phoneNumberField.getX(),connectMessage.getY()+DISTANCE*2,FIELD_WITH,FIELD_WITH/2);
             messageStatus.setBackground(Color.black);
             messageStatus.setForeground(Color.WHITE);
-            //messageStatus.setVisible(true);
-            //this.add(messageStatus);
+            messageStatus.setFont(font);
+            messageStatus.setVisible(true);
+            this.add(messageStatus);
+             JLabel statusMessageText=new JLabel("Message Status:");
+            statusMessageText.setBounds(messageStatus.getX(),messageStatus.getY()-FIELD_HEIGHT,FIELD_WITH,FIELD_HEIGHT);
+            statusMessageText.setFont(font);
+            statusMessageText.setForeground(Color.gray);
+            statusMessageText.setVisible(true);
+            this.add(statusMessageText);
 
                //  כפתור שליחת הודעה למספר
         JButton sendMessageButton=new JButton("send");
@@ -102,12 +112,14 @@ public class MainPanel extends JPanel {
         sendMessageButton.requestFocus();
            //  הודעת מצב שליחת ההודעה
             JLabel isItSendText =new JLabel("The message didnt send yet..");
-            isItSendText.setBounds(connectMessage.getX(),connectMessage.getY()+HIGTH_BUTTON/2,FIELD_WITH*3,FIELD_HEIGHT);
             isItSendText.setForeground(Color.RED);
+            isItSendText.setBounds(connectMessage.getX(),connectMessage.getY()+HIGTH_BUTTON/2,FIELD_WITH*3,FIELD_HEIGHT);
             isItSendText.setFont(font);
             isItSendText.setVisible(true);
             this.add(isItSendText);
         sendMessageButton.addActionListener((event2 ->{
+            isItSendText.setForeground(Color.RED);
+            isItSendText.setText("The message didnt send yet..");
             String phoneNumberCheat=phoneNumberField.getText();
             //    ולידציה לתיבת הטקסט
            if (messageFiled.getText().equals("")){
@@ -123,13 +135,14 @@ public class MainPanel extends JPanel {
            else {
                //    ולידציה למספר
                if (checkPhoneNumber(phoneNumberCheat)) {
+                   phoneNumberCheat = phoneNumberField.getText().substring(1);
                    String urlChat = "https://web.whatsapp.com/send?phone=" + phoneNumberCheat;
                    boolean isItSend = false;
-                  try {
-                      driver.get(urlChat);  //  כניסה לעמוד הצ'אט
-                  } catch (Exception e){
-                      System.out.println("the link to the chat is illegal!");
-                  }
+                   try {
+                       driver.get(urlChat);  //  כניסה לעמוד הצ'אט
+                   } catch (Exception e) {
+                       System.out.println("the link to the chat is illegal!");
+                   }
                    while (!isItSend) {  //  ההודעה לא נשלחת עד שלא כל העמוד נטען
                        try {
                            WebElement cheatField = driver.findElement(By.cssSelector("div[title=\"הקלדת ההודעה\"]"));
@@ -140,27 +153,17 @@ public class MainPanel extends JPanel {
                            System.out.println("send successfully!");
                            isItSendText.setForeground(Color.GREEN);
                            isItSendText.setText("massage send successfully!");
+                           messageStatus.setForeground(Color.WHITE);
+                           messageStatus.setText("  v");
+                           messageStatus.setVisible(true);
 
                        } catch (Exception e) {
                            System.out.println("something wrong..  try again");
                        }
                    }
 
-                   //   סטטוס ההודעה
-                   /* List<WebElement> allMessages = driver.findElements(By.className("copyable-text"));
-
-                   System.out.println(allMessages.get(allMessages.size()-2).getText());
-                   System.out.println(allMessages.size());
-                   try {
-                       checkStatus(allMessages.get(allMessages.size() - 2));
-                   } catch (Exception e){
-                       System.out.println("there is no message");
                    }
-                    */
-
-                   messageStatus.setFont(font);
                }
-           }
 
         }));
 
@@ -170,9 +173,28 @@ public class MainPanel extends JPanel {
         this.add(connectButton);
         connectButton.requestFocus();
 
+
+
     }
 
-
+ public void changeStatus(){
+     while (true) {  //  לולאה שנייה ע"מ לבדוק אם יש וי כחול ותמשיך לבדוק עד שההודעה לא תיקרא
+         if (lastMessageStatus.getAttribute("aria-label").equals(" נקראה ")) {
+             messageStatus.setForeground(Color.CYAN);
+             messageStatus.setText("  vv");
+             messageStatus.setVisible(true);
+             System.out.println(2);
+             System.out.println(messageStatus.getText());
+             break;
+         }
+         else if (lastMessageStatus.getAttribute("aria-label").equals(" נמסרה ")) {
+             messageStatus.setText("  vv");
+             messageStatus.setVisible(true);
+             System.out.println(12);
+             System.out.println(messageStatus.getText());
+         }
+     }
+ }
 
     public void setLoopConnectStatus(boolean loopConnectStatus) {
         this.loopConnectStatus = loopConnectStatus;
@@ -202,38 +224,43 @@ public class MainPanel extends JPanel {
             wrongMessageFrame.setSize(WITH_FRAME / 5, HEIGHT_FRAME / 5);
             wrongMessageFrame.setBackground(Color.RED);
             JLabel wrongFrameText = new JLabel("You didnt enter a phone number!");
+            wrongFrameText.setSize(WITH_FRAME/5,HEIGHT_FRAME/7);
             wrongFrameText.setFont(font);
             wrongFrameText.setVisible(true);
             wrongMessageFrame.add(wrongFrameText);
             wrongMessageFrame.setVisible(true);
         }
-        if (phoneNumber.length() == 9) {
+        if (phoneNumber.length() == 10) {
             condition++;
         }
-        if (phoneNumber.charAt(0) == '5') {
+        if (phoneNumber.charAt(0) == '0') {
             condition++;
         }
+        if (phoneNumber.charAt(1) == '5') {
+            condition++;
+        }
+
         for (int i = 0; i < arrAreaCodeNum.length; i++) {
-            if (phoneNumber.charAt(1) == arrAreaCodeNum[i]) {
+            if (phoneNumber.charAt(2) == arrAreaCodeNum[i]) {
                 condition++;
                 break;
             }
         }
-        for (int i = 2; i < phoneNumber.length(); i++) {
+        for (int i = 3; i < phoneNumber.length(); i++) {
             for (int j = 0; j < allNumbersArr.length; j++) {
                 if (phoneNumber.charAt(i) == allNumbersArr[j]) {
                     correctNumber++;
                 }
             }
         }
-        if (condition == 3 && correctNumber == 7) {
+        if (condition == 4 && correctNumber == 7) {
             ans = true;
         } else {
             JFrame wrongMessageFrame = new JFrame();
-            wrongMessageFrame.setSize(WITH_FRAME / 4 , HEIGHT_FRAME / 4);
-            wrongMessageFrame.setBackground(Color.RED);
-            JLabel wrongFrameText = new JLabel("Your phone number is illegal!");
+            wrongMessageFrame.setSize(WITH_FRAME / 3 , HEIGHT_FRAME / 4);
+            JTextArea wrongFrameText = new JTextArea("Your phone number is illegal!"+"\n your number need to see like this: 05*-*******");
             wrongFrameText.setFont(font);
+            wrongFrameText.setBackground(Color.RED);
             wrongFrameText.setVisible(true);
             wrongMessageFrame.add(wrongFrameText);
             wrongMessageFrame.setVisible(true);
@@ -257,22 +284,13 @@ public class MainPanel extends JPanel {
     }
 
 
-
-//    לפיתוח עתידי של תיבת טקסט עם סטטוס הודעה
-    /*public void checkStatus(WebElement message){
-        WebElement s1=message.findElement(By.cssSelector("span[data-testid=\"msg-dblcheck\"]"));
-
-        if (message.getAttribute("aria-label").equals(" נשלחה ")){
-            messageStatus.setText("v");
-        }
-        else if (message.getAttribute("aria-label").equals(" נמסרה ")){
-            messageStatus.setText("vv");
-        }
-        else if (message.getAttribute("aria-label").equals(" נקראה ")){
-            messageStatus.setForeground(Color.CYAN);
-            messageStatus.setText("vv");
-        }
     }
 
-     */
-}
+
+
+
+
+
+
+
+
